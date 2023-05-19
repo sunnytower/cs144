@@ -18,7 +18,6 @@ protected:
   bool eof_;
   uint64_t bytes_pushed_;
   uint64_t bytes_popped_;
-  
 
 public:
   explicit ByteStream( uint64_t capacity );
