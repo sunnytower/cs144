@@ -12,7 +12,8 @@ class ByteStream
 {
 protected:
   uint64_t capacity_;
-  std::string buffer_;
+  // std::string buffer_;
+  std::deque<std::string> buffer_;
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
   bool error_;
   bool eof_;

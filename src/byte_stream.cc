@@ -8,16 +8,13 @@ ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), buffer_{}, 
 
 void Writer::push( string data )
 {
-  if (eof_) {
-    return;
-  }
-  // Your code here.
-  if (buffer_.size() + data.size() > capacity_) {
-    bytes_pushed_ += capacity_ - buffer_.size();
-    buffer_ += data.substr(0, capacity_ - buffer_.size());
-  } else {
-    bytes_pushed_ += data.size();
-    buffer_ += data;
+  if ( !eof_ && !error_ ) {
+    const auto data_size = std::min( available_capacity(), data.size()  );
+    if ( data_size > 0 ) { /* only push the dataset for a positive to_push size*/
+      /* only push the data string with upper bounds to_push sizes*/
+      buffer_.push_back( data.substr( 0, data_size ) );
+      bytes_pushed_ += data_size;
+    }
   }
 }
 
@@ -42,7 +39,7 @@ bool Writer::is_closed() const
 uint64_t Writer::available_capacity() const
 {
   // Your code here.
-  return capacity_ - buffer_.size();
+  return capacity_ - bytes_pushed_ + bytes_popped_;
 }
 
 uint64_t Writer::bytes_pushed() const
@@ -54,7 +51,7 @@ uint64_t Writer::bytes_pushed() const
 string_view Reader::peek() const
 {
   // Your code here.
-  return string_view( buffer_ );
+  return string_view (buffer_.front().data(), buffer_.front().size());
 }
 
 bool Reader::is_finished() const
@@ -72,19 +69,21 @@ bool Reader::has_error() const
 void Reader::pop( uint64_t len )
 {
   // Your code here.
-  if (len > buffer_.size()) {
-    bytes_popped_ += buffer_.size();
-    buffer_.erase(0, buffer_.size());
-  } else {
-    bytes_popped_ += len;
-    buffer_.erase(0, len);
+  while (len > 0 && !buffer_.empty()) {
+    const auto data_size = min( len, buffer_.front().size() );
+    buffer_.front().erase( 0, data_size );
+    bytes_popped_ += data_size;
+    len -= data_size;
+    if (buffer_.front().empty()) {
+      buffer_.pop_front();
+    }
   }
 }
 
 uint64_t Reader::bytes_buffered() const
 {
   // Your code here.
-  return buffer_.size();
+  return bytes_pushed_ - bytes_popped_;
 }
 
 uint64_t Reader::bytes_popped() const
