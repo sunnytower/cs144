@@ -16,8 +16,8 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     is_end_ = true;
     end_index_ = first_index + data.size();
   }
-  /* left side of data is already pushed */
-  if ( first_index <= first_unassembled_index_ && first_index + data.size() > first_unassembled_index_ ) {
+  // /* left side of data is already pushed */
+  if ( first_index < first_unassembled_index_ ) {
     data = data.substr( first_unassembled_index_ - first_index );
     first_index = first_unassembled_index_;
   }
@@ -35,7 +35,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     it = unassembled_data_.erase( it );
   }
   /* close the writer */
-  if ( is_end_ && first_unassembled_index_ == end_index_ && unassembled_data_.empty()) {
+  if ( is_end_ && first_unassembled_index_ == end_index_ && unassembled_data_.empty() ) {
     output.close();
   }
 }
@@ -49,7 +49,7 @@ void Reassembler::store( uint64_t first_index, string data )
     auto prev_it = std::prev( it );
     const uint64_t prev_end_idx = prev_it->first + prev_it->second.size();
     if ( prev_end_idx >= first_index ) {
-      if ( prev_end_idx >= first_index + data.size() ) { 
+      if ( prev_end_idx >= first_index + data.size() ) {
         data = prev_it->second;
       } else {
         string prev_str = prev_it->second.substr( 0, first_index - prev_it->first );
@@ -60,7 +60,7 @@ void Reassembler::store( uint64_t first_index, string data )
     }
   }
   /* find the next substr could be merged */
-  while (it != unassembled_data_.end() && first_index + data.size() >= it->first) {
+  while ( it != unassembled_data_.end() && first_index + data.size() >= it->first ) {
     if ( first_index + data.size() < it->first + it->second.size() ) {
       data += it->second.substr( first_index + data.size() - it->first );
     }
@@ -68,7 +68,6 @@ void Reassembler::store( uint64_t first_index, string data )
   }
 
   unassembled_data_[first_index] = data;
-
 }
 
 uint64_t Reassembler::bytes_pending() const
