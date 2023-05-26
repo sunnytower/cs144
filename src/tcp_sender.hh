@@ -5,6 +5,7 @@
 #include "tcp_sender_message.hh"
 #include <deque>
 #include <queue>
+#include <vector>
 
 class TCPTimer
 {
@@ -64,6 +65,7 @@ private:
   uint64_t next_seqno_ { 0 };
   uint64_t last_ackno_ { 0 };
   uint64_t last_window_size_ { 0 };
+  bool zero_window_ { false };
 
 public:
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */

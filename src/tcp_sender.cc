@@ -48,12 +48,14 @@ void TCPSender::push( Reader& outbound_stream )
       SYN = true;
     }
     msg.seqno = Wrap32::wrap( next_seqno_, isn_ );
-    const auto payload_size
-      = min( effective_window_size - sequence_numbers_in_flight() - msg.sequence_length(), TCPConfig::MAX_PAYLOAD_SIZE );
+    const auto payload_size = min( effective_window_size - sequence_numbers_in_flight() - msg.sequence_length(),
+                                   TCPConfig::MAX_PAYLOAD_SIZE );
     read( outbound_stream, payload_size, msg.payload );
     if ( !FIN && outbound_stream.is_finished() ) {
-      msg.FIN = true;
-      FIN = true;
+      if ( sequence_numbers_in_flight() + msg.sequence_length() < effective_window_size ) {
+        msg.FIN = true;
+        FIN = true;
+      }
     }
     if ( msg.sequence_length() > 0 ) {
       segments_out_.push_back( msg );
@@ -81,6 +83,9 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
 {
   // Your code here.
   last_window_size_ = msg.window_size;
+  if ( msg.window_size == 0 ) {
+    zero_window_ = true;
+  }
   if ( !SYN ) {
     return;
   }
@@ -111,8 +116,8 @@ void TCPSender::tick( const size_t ms_since_last_tick )
   /* retransmit the earliest segment */
   if ( !outstanding_segments_.empty() ) {
     segments_out_.push_front( outstanding_segments_.front() );
-    /* increment counter and double RTO if not zero window_size */
-    if ( last_window_size_ != 0 ) {
+    /* increment counter and double RTO if window size is not zero */
+    if ( !zero_window_ ) {
       consecutive_retransmissions_++;
       timer_.doubleRTO();
     }
