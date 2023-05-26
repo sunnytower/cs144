@@ -27,7 +27,6 @@ public:
     logical_RTO_ms_ = initial_RTO_ms_;
     current_RTO_ms_ = 0;
   }
-  void reset() { current_RTO_ms_ = 0; }
   void start()
   {
     started_ = true;
@@ -43,6 +42,7 @@ public:
     if ( started_ ) {
       current_RTO_ms_ += ms;
       if ( current_RTO_ms_ >= logical_RTO_ms_ ) {
+        current_RTO_ms_ = 0;
         return true;
       }
     }

@@ -117,7 +117,7 @@ void TCPSender::tick( const size_t ms_since_last_tick )
       timer_.doubleRTO();
     }
     /* reset timer_ */
-    timer_.reset();
+    // timer_.reset();
   } else {
     timer_.stop();
   }
