@@ -48,6 +48,7 @@ private:
   /* ipv4: ttl */
   std::map<uint32_t, uint32_t> arp_waiting_ {};
   std::queue<EthernetFrame> send_queue_ {};
+  std::queue<std::pair<Address, InternetDatagram>> send_datagram_waiting_ {};
 
   // Ethernet (known as hardware, network-access, or link-layer) address of the interface
   EthernetAddress ethernet_address_;
