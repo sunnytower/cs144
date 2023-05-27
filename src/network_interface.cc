@@ -47,9 +47,8 @@ void NetworkInterface::send_datagram( const InternetDatagram& dgram, const Addre
       frame.payload = serialize( arp );
       send_queue_.push( frame );
       arp_waiting_.insert({next_hop.ipv4_numeric(), ARP_REQUEST_TIMEOUT});
-
       /* save datagram */
-      send_datagram_waiting_.push({next_hop, dgram});
+      datagram_waiting_.insert({next_hop, dgram});
     }
   }
 
@@ -74,7 +73,7 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
   if ( frame.header.type == EthernetHeader::TYPE_ARP ) {
     ARPMessage arp;
     if (parse( arp, frame.payload )) {
-      if (arp.opcode == ARPMessage::OPCODE_REQUEST) {
+      if (arp.opcode == ARPMessage::OPCODE_REQUEST && arp.target_ip_address == ip_address_.ipv4_numeric()) {
         /* reply */
         ARPMessage reply;
         reply.opcode = ARPMessage::OPCODE_REPLY;
@@ -96,10 +95,11 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
         if (arp_waiting_.find(arp.sender_ip_address) != arp_waiting_.end()) {
           arp_waiting_.erase(arp.sender_ip_address);
         }
-        for (auto it = send_datagram_waiting_.begin(); it != send_datagram_waiting_.end(); it++) {
-          if (it->first.ipv4_numeric() == arp.sender_ip_address) {
-            send_datagram(it->second, it->first);
-            send_datagram_waiting_.erase(it);
+        /* send datagram_waiting*/
+        for (auto& elem: datagram_waiting_) {
+          if (elem.first.ipv4_numeric() == arp.sender_ip_address) {
+            send_datagram(elem.second, elem.first);
+            datagram_waiting_.erase(elem.first);
           }
         }
       }
@@ -111,7 +111,23 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
 // ms_since_last_tick: the number of milliseconds since the last call to this method
 void NetworkInterface::tick( const size_t ms_since_last_tick )
 {
-  (void)ms_since_last_tick;
+  for ( auto iter = arp_table_.begin(); iter != arp_table_.end(); ) {
+    iter->second.ttl -= ms_since_last_tick;
+    if (iter->second.ttl <= 0) {
+      iter = arp_table_.erase(iter);
+    } else {
+      iter++;
+    }
+  }
+
+  for (auto iter = arp_waiting_.begin(); iter != arp_waiting_.end(); ) {
+    iter->second -= ms_since_last_tick;
+    if (iter->second <= 0) {
+      iter = arp_waiting_.erase(iter);
+    } else {
+      iter++;
+    }
+  }
 }
 
 optional<EthernetFrame> NetworkInterface::maybe_send()
