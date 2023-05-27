@@ -88,6 +88,7 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
         reply_frame.header.src = ethernet_address_;
         reply_frame.payload = serialize( reply );
         send_queue_.push( reply_frame );
+        /* TODO: add the sender to arp_table_*/
       } else if (arp.opcode == ARPMessage::OPCODE_REPLY) {
         /* update arp table */
         arp_table_.insert({arp.sender_ip_address, {arp.sender_ethernet_address, TTL_TIMEOUT}});
