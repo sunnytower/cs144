@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <utility>
 
+#include <map>
+#include <queue>
 // A "network interface" that connects IP (the internet layer, or network layer)
 // with Ethernet (the network access layer, or link layer).
 
@@ -35,6 +37,18 @@
 class NetworkInterface
 {
 private:
+  constexpr static int64_t TTL_TIMEOUT = 60 * 1000; // 60 seconds
+  constexpr static int64_t ARP_REQUEST_TIMEOUT = 5 * 1000; // 5 second
+  struct ARP_entry{
+    EthernetAddress ethernet_address;
+    int64_t ttl;
+  };
+  /* ipv4 : {ethernet ttl}*/
+  std::map<uint32_t, ARP_entry> arp_table_ {};
+  /* ipv4: ttl */
+  std::map<uint32_t, uint32_t> arp_waiting_ {};
+  std::queue<EthernetFrame> send_queue_ {};
+
   // Ethernet (known as hardware, network-access, or link-layer) address of the interface
   EthernetAddress ethernet_address_;
 

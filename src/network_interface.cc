@@ -22,8 +22,35 @@ NetworkInterface::NetworkInterface( const EthernetAddress& ethernet_address, con
 // Address::ipv4_numeric() method.
 void NetworkInterface::send_datagram( const InternetDatagram& dgram, const Address& next_hop )
 {
-  (void)dgram;
-  (void)next_hop;
+  /* if destination ethernet address is known. */
+  if ( arp_table_.find( next_hop.ipv4_numeric() ) != arp_table_.end() ) {
+    EthernetFrame frame;
+    frame.header.type = EthernetHeader::TYPE_IPv4;
+    frame.header.src = ethernet_address_;
+    frame.header.dst = arp_table_.at( next_hop.ipv4_numeric() ).ethernet_address;
+    frame.payload = serialize( dgram );
+    send_queue_.push( frame );
+  } else {
+    if (arp_waiting_.find(next_hop.ipv4_numeric()) == arp_waiting_.end()) {
+      /* need to send arp request */
+      ARPMessage arp;
+      arp.opcode = ARPMessage::OPCODE_REQUEST;
+      arp.sender_ethernet_address = ethernet_address_;
+      arp.sender_ip_address = ip_address_.ipv4_numeric();
+      arp.target_ip_address = next_hop.ipv4_numeric();
+      // arp.target_ethernet_address = ETHERNET_BROADCAST;
+
+      EthernetFrame frame;
+      frame.header.type = EthernetHeader::TYPE_ARP;
+      frame.header.dst = ETHERNET_BROADCAST;
+      frame.header.src = ethernet_address_;
+      frame.payload = serialize( arp );
+      send_queue_.push( frame );
+      arp_waiting_.insert({next_hop.ipv4_numeric(), ARP_REQUEST_TIMEOUT});
+
+    }
+  }
+
 }
 
 // frame: the incoming Ethernet frame
