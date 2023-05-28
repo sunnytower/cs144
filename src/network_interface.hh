@@ -38,7 +38,7 @@
 class NetworkInterface
 {
 private:
-  constexpr static int64_t TTL_TIMEOUT = 60 * 1000; // 60 seconds
+  constexpr static int64_t TTL_TIMEOUT = 30 * 1000; // 30 seconds
   constexpr static int64_t ARP_REQUEST_TIMEOUT = 5 * 1000; // 5 second
   struct ARP_entry{
     EthernetAddress ethernet_address;
@@ -46,8 +46,8 @@ private:
   };
   /* ipv4 : {ethernet ttl}*/
   std::map<uint32_t, ARP_entry> arp_table_ {};
-  /* ipv4: ttl */
-  std::map<uint32_t, uint32_t> arp_waiting_ {};
+  /* ipv4: arp_ttl */
+  std::map<uint32_t, int64_t> arp_waiting_ {};
   std::queue<EthernetFrame> send_queue_ {};
   std::map<Address, InternetDatagram> datagram_waiting_ {};
 

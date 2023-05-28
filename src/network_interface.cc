@@ -88,22 +88,23 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
         reply_frame.header.src = ethernet_address_;
         reply_frame.payload = serialize( reply );
         send_queue_.push( reply_frame );
-        /* TODO: add the sender to arp_table_*/
-      } else if (arp.opcode == ARPMessage::OPCODE_REPLY) {
-        /* update arp table */
+        /* add the sender to arp_table_ */
         arp_table_.insert({arp.sender_ip_address, {arp.sender_ethernet_address, TTL_TIMEOUT}});
-        /* remove arp_waiting_ */
-        if (arp_waiting_.find(arp.sender_ip_address) != arp_waiting_.end()) {
-          arp_waiting_.erase(arp.sender_ip_address);
-        }
-        /* send datagram_waiting*/
-        for (auto& elem: datagram_waiting_) {
-          if (elem.first.ipv4_numeric() == arp.sender_ip_address) {
-            send_datagram(elem.second, elem.first);
-            datagram_waiting_.erase(elem.first);
-          }
+    } else if ( arp.opcode == ARPMessage::OPCODE_REPLY ) {
+      /* update arp table */
+      arp_table_.insert( { arp.sender_ip_address, { arp.sender_ethernet_address, TTL_TIMEOUT } } );
+      /* remove arp_waiting_ */
+      if ( arp_waiting_.find( arp.sender_ip_address ) != arp_waiting_.end() ) {
+        arp_waiting_.erase( arp.sender_ip_address );
+      }
+      /* send datagram_waiting*/
+      for ( auto& elem : datagram_waiting_ ) {
+        if ( elem.first.ipv4_numeric() == arp.sender_ip_address ) {
+          send_datagram( elem.second, elem.first );
+          datagram_waiting_.erase( elem.first );
         }
       }
+    }
     }
   }
   return {};
