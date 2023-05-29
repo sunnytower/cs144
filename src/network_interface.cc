@@ -31,7 +31,7 @@ void NetworkInterface::send_datagram( const InternetDatagram& dgram, const Addre
     frame.payload = serialize( dgram );
     send_queue_.push( frame );
   } else {
-    if (arp_waiting_.find(next_hop.ipv4_numeric()) == arp_waiting_.end()) {
+    if ( arp_waiting_.find( next_hop.ipv4_numeric() ) == arp_waiting_.end() ) {
       /* need to send arp request */
       ARPMessage arp;
       arp.opcode = ARPMessage::OPCODE_REQUEST;
@@ -46,12 +46,11 @@ void NetworkInterface::send_datagram( const InternetDatagram& dgram, const Addre
       frame.header.src = ethernet_address_;
       frame.payload = serialize( arp );
       send_queue_.push( frame );
-      arp_waiting_.insert({next_hop.ipv4_numeric(), ARP_REQUEST_TIMEOUT});
+      arp_waiting_.insert( { next_hop.ipv4_numeric(), ARP_REQUEST_TIMEOUT } );
       /* save datagram */
-      datagram_waiting_.insert({next_hop, dgram});
+      datagram_waiting_.insert( { next_hop, dgram } );
     }
   }
-
 }
 
 // frame: the incoming Ethernet frame
@@ -63,7 +62,7 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
   /* ipv4 package */
   if ( frame.header.type == EthernetHeader::TYPE_IPv4 ) {
     InternetDatagram dgram;
-    if (parse( dgram, frame.payload )) {
+    if ( parse( dgram, frame.payload ) ) {
       return dgram;
     } else {
       return {};
@@ -72,8 +71,8 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
   /* arp package */
   if ( frame.header.type == EthernetHeader::TYPE_ARP ) {
     ARPMessage arp;
-    if (parse( arp, frame.payload )) {
-      if (arp.opcode == ARPMessage::OPCODE_REQUEST && arp.target_ip_address == ip_address_.ipv4_numeric()) {
+    if ( parse( arp, frame.payload ) ) {
+      if ( arp.opcode == ARPMessage::OPCODE_REQUEST && arp.target_ip_address == ip_address_.ipv4_numeric() ) {
         /* reply */
         ARPMessage reply;
         reply.opcode = ARPMessage::OPCODE_REPLY;
@@ -89,22 +88,22 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
         reply_frame.payload = serialize( reply );
         send_queue_.push( reply_frame );
         /* add the sender to arp_table_ */
-        arp_table_.insert({arp.sender_ip_address, {arp.sender_ethernet_address, TTL_TIMEOUT}});
-    } else if ( arp.opcode == ARPMessage::OPCODE_REPLY ) {
-      /* update arp table */
-      arp_table_.insert( { arp.sender_ip_address, { arp.sender_ethernet_address, TTL_TIMEOUT } } );
-      /* remove arp_waiting_ */
-      if ( arp_waiting_.find( arp.sender_ip_address ) != arp_waiting_.end() ) {
-        arp_waiting_.erase( arp.sender_ip_address );
-      }
-      /* send datagram_waiting*/
-      for ( auto& elem : datagram_waiting_ ) {
-        if ( elem.first.ipv4_numeric() == arp.sender_ip_address ) {
-          send_datagram( elem.second, elem.first );
-          datagram_waiting_.erase( elem.first );
+        arp_table_.insert( { arp.sender_ip_address, { arp.sender_ethernet_address, TTL_TIMEOUT } } );
+      } else if ( arp.opcode == ARPMessage::OPCODE_REPLY ) {
+        /* update arp table */
+        arp_table_.insert( { arp.sender_ip_address, { arp.sender_ethernet_address, TTL_TIMEOUT } } );
+        /* remove arp_waiting_ */
+        if ( arp_waiting_.find( arp.sender_ip_address ) != arp_waiting_.end() ) {
+          arp_waiting_.erase( arp.sender_ip_address );
+        }
+        /* send datagram_waiting*/
+        for ( auto& elem : datagram_waiting_ ) {
+          if ( elem.first.ipv4_numeric() == arp.sender_ip_address ) {
+            send_datagram( elem.second, elem.first );
+            datagram_waiting_.erase( elem.first );
+          }
         }
       }
-    }
     }
   }
   return {};
@@ -115,17 +114,17 @@ void NetworkInterface::tick( const size_t ms_since_last_tick )
 {
   for ( auto iter = arp_table_.begin(); iter != arp_table_.end(); ) {
     iter->second.ttl -= ms_since_last_tick;
-    if (iter->second.ttl <= 0) {
-      iter = arp_table_.erase(iter);
+    if ( iter->second.ttl <= 0 ) {
+      iter = arp_table_.erase( iter );
     } else {
       iter++;
     }
   }
 
-  for (auto iter = arp_waiting_.begin(); iter != arp_waiting_.end(); ) {
+  for ( auto iter = arp_waiting_.begin(); iter != arp_waiting_.end(); ) {
     iter->second -= ms_since_last_tick;
-    if (iter->second <= 0) {
-      iter = arp_waiting_.erase(iter);
+    if ( iter->second <= 0 ) {
+      iter = arp_waiting_.erase( iter );
     } else {
       iter++;
     }
@@ -134,7 +133,7 @@ void NetworkInterface::tick( const size_t ms_since_last_tick )
 
 optional<EthernetFrame> NetworkInterface::maybe_send()
 {
-  if (send_queue_.empty()) {
+  if ( send_queue_.empty() ) {
     return {};
   } else {
     EthernetFrame frame = send_queue_.front();
