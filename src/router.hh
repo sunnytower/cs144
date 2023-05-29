@@ -54,6 +54,14 @@ class Router
 {
   // The router's collection of network interfaces
   std::vector<AsyncNetworkInterface> interfaces_ {};
+  struct route_entry
+  {
+    uint32_t route_prefix;
+    uint8_t prefix_length;
+    std::optional<Address> next_hop;
+    size_t interface_num;
+  };
+  std::vector<route_entry> route_table_ {};
 
 public:
   // Add an interface to the router
