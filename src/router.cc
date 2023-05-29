@@ -34,9 +34,10 @@ void Router::route()
     auto datagram = interface_.maybe_receive();
     if ( datagram.has_value() ) {
       /* drop the package */
-      if ( datagram->header.ttl == 0 || datagram->header.ttl == 1 ) {
+      if ( datagram->header.ttl <= 1) {
         continue;
       }
+      datagram->header.ttl--;
 
       /* match */
       for ( const auto& entry : route_table_ ) {
@@ -46,6 +47,7 @@ void Router::route()
           if ( entry.next_hop.has_value() ) {
             /* send the package to the next hop */
             interface_.send_datagram( datagram.value(), entry.next_hop.value() );
+            // interface( entry.interface_num ).send_datagram( datagram.value(), entry.next_hop.value() );
           } else {
             /* send the package to the destination */
             interface( entry.interface_num )

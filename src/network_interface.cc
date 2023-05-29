@@ -96,11 +96,20 @@ optional<InternetDatagram> NetworkInterface::recv_frame( const EthernetFrame& fr
         if ( arp_waiting_.find( arp.sender_ip_address ) != arp_waiting_.end() ) {
           arp_waiting_.erase( arp.sender_ip_address );
         }
-        /* send datagram_waiting*/
-        for ( auto& elem : datagram_waiting_ ) {
-          if ( elem.first.ipv4_numeric() == arp.sender_ip_address ) {
-            send_datagram( elem.second, elem.first );
-            datagram_waiting_.erase( elem.first );
+        /* send datagram_waiting */
+        // for ( auto& elem : datagram_waiting_ ) {
+        //   if ( elem.first.ipv4_numeric() == arp.sender_ip_address ) {
+        //     send_datagram( elem.second, elem.first );
+        //     datagram_waiting_.erase( elem.first );
+        //   }
+        // }
+
+        for ( auto iter = datagram_waiting_.begin(); iter != datagram_waiting_.end(); ) {
+          if ( iter->first.ipv4_numeric() == arp.sender_ip_address ) {
+            send_datagram( iter->second, iter->first );
+            iter = datagram_waiting_.erase( iter );
+          } else {
+            ++iter;
           }
         }
       }
